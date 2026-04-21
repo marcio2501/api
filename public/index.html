@@ -18,12 +18,21 @@
       font-family: Arial;
       text-align: center;
       padding: 10px;
+
+      /* FUNDO DOURADO BONITO */
+      background: linear-gradient(135deg, #f7d774, #f2c94c, #d4af37);
+      min-height: 100vh;
     }
 
     .container-pagamento {
       max-width: 500px;
       margin: 0 auto;
-      padding: 10px;
+      padding: 20px;
+
+      /* CAIXA BRANCA PRA NÃO PREJUDICAR LEITURA */
+      background: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
 
     #qrcode canvas,
@@ -38,23 +47,33 @@
       height: 80px;
       font-size: 12px;
       resize: none;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 8px;
     }
 
     button {
       width: 100%;
       max-width: 200px;
+      border-radius: 8px;
     }
 
     h3 {
       font-size: 20px;
+      color: #333;
     }
 
     /* CONTADOR */
     .contador {
       font-size: 28px;
       font-weight: bold;
-      color: green;
+      color: #2e7d32;
       margin-top: 10px;
+    }
+
+    /* LOADING COM FUNDO SUAVE */
+    #loading {
+      background: rgba(255,255,255,0.95) !important;
     }
 
     @media (max-width: 480px) {
@@ -81,7 +100,7 @@
 <body>
 
 <!-- LOADING -->
-<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;z-index:9999;padding-top:20px;">
+<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;padding-top:20px;">
   <img src="Loading_icon.gif" style="width:200px;">
 </div>
 
@@ -145,16 +164,13 @@ async function criarPagamento() {
     const qr = data.point_of_interaction.transaction_data.qr_code;
     const copiaCola = data.point_of_interaction.transaction_data.qr_code;
 
-    // QR
     document.getElementById("qrcode").innerHTML = "";
     new QRCode(document.getElementById("qrcode"), qr);
 
-    // INFO
     document.getElementById("info_pagamento").style.display = "block";
     document.getElementById("descricao").innerText = DESCRICAO;
     document.getElementById("valor").innerText = "R$ " + VALOR;
 
-    // PIX copia e cola
     document.getElementById("pixCopia").innerHTML = `
       <textarea id="pixTexto">${copiaCola}</textarea>
       <br><br>
@@ -190,7 +206,6 @@ async function verificarPagamento(id) {
     if (data.status === "approved") {
       clearInterval(interval);
 
-      // mensagem + contador
       document.getElementById("status").innerHTML = `
         <h2>Pagamento aprovado ✅</h2>
         <p>Redirecionando para o chat...</p>
@@ -217,7 +232,6 @@ function iniciarContador() {
 
     if (tempo <= 0) {
       clearInterval(intervalo);
-
       window.location.href = "https://tawk.to/chat/69ccd2878bf0a61c2cb9ba4f/1jl41coc1";
     }
   }, 1000);
