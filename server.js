@@ -27,8 +27,7 @@ app.post("/create-payment", async (req, res) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.MP_TOKEN}`,
-        // 🔥 OBRIGATÓRIO (corrige seu erro)
-        "X-Idempotency-Key": Date.now().toString()
+        "X-Idempotency-Key": Date.now().toString() // 🔥 obrigatório
       },
       body: JSON.stringify({
         transaction_amount: Number(req.body.transaction_amount),
@@ -37,7 +36,9 @@ app.post("/create-payment", async (req, res) => {
         payer: {
           email: "marciodoxosse@gmail.com"
         },
-        notification_url: process.env.WEBHOOK_URL || null,
+        notification_url: process.env.WEBHOOK_URL
+          ? process.env.WEBHOOK_URL
+          : undefined
       }),
     });
 
@@ -76,7 +77,7 @@ app.get("/check-payment/:id", async (req, res) => {
 
     const data = await response.json();
 
-    console.log("🔍 STATUS PAGAMENTO:", data);
+    console.log("🔍 STATUS PAGAMENTO:", data.status);
 
     res.json(data);
 
@@ -87,11 +88,47 @@ app.get("/check-payment/:id", async (req, res) => {
 });
 
 // =========================
-// WEBHOOK
+// WEBHOOK (IMPORTANTE)
 // =========================
-app.post("/webhook", (req, res) => {
-  console.log("🔔 WEBHOOK RECEBIDO:", req.body);
-  res.sendStatus(200);
+app.post("/webhook", async (req, res) => {
+  try {
+    console.log("🔔 WEBHOOK RECEBIDO:", req.body);
+
+    if (req.body.type === "payment") {
+      const paymentId = req.body.data.id;
+
+      console.log("💰 ID PAGAMENTO:", paymentId);
+
+      // 🔥 BUSCAR STATUS REAL NO MP
+      const response = await fetch(
+        `https://api.mercadopago.com/v1/payments/${paymentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.MP_TOKEN}`,
+          },
+        }
+      );
+
+      const paymentData = await response.json();
+
+      console.log("📊 STATUS FINAL:", paymentData.status);
+
+      if (paymentData.status === "approved") {
+        console.log("✅ PAGAMENTO APROVADO!");
+
+        // 👉 AQUI você pode:
+        // salvar no banco
+        // liberar acesso
+        // enviar email
+      }
+    }
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error("❌ ERRO WEBHOOK:", err);
+    res.sendStatus(500);
+  }
 });
 
 // =========================
