@@ -10,9 +10,18 @@ app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 
-// Criar pagamento
+// 🔥 VERIFICA TOKEN
+if (!process.env.MP_TOKEN) {
+  console.error("❌ MP_TOKEN NÃO DEFINIDO");
+}
+
+// =========================
+// CRIAR PAGAMENTO
+// =========================
 app.post("/create-payment", async (req, res) => {
   try {
+    console.log("📩 Requisição recebida:", req.body);
+
     const response = await fetch("https://api.mercadopago.com/v1/payments", {
       method: "POST",
       headers: {
@@ -20,19 +29,39 @@ app.post("/create-payment", async (req, res) => {
         Authorization: `Bearer ${process.env.MP_TOKEN}`,
       },
       body: JSON.stringify({
-        ...req.body,
-        notification_url: process.env.WEBHOOK_URL,
+        transaction_amount: Number(req.body.transaction_amount),
+        payment_method_id: "pix",
+        description: req.body.description || "Pagamento PIX",
+        payer: {
+          email: "test_user_123@testuser.com"
+        },
+        notification_url: process.env.WEBHOOK_URL || null,
       }),
     });
 
     const data = await response.json();
+
+    // 🔥 DEBUG IMPORTANTE
+    console.log("💰 RESPOSTA MERCADO PAGO:", data);
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "Erro no Mercado Pago",
+        details: data
+      });
+    }
+
     res.json(data);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ ERRO INTERNO:", err);
+    res.status(500).json({ error: "Erro interno no servidor" });
   }
 });
 
-// Verificar pagamento
+// =========================
+// VERIFICAR PAGAMENTO
+// =========================
 app.get("/check-payment/:id", async (req, res) => {
   try {
     const response = await fetch(
@@ -45,18 +74,28 @@ app.get("/check-payment/:id", async (req, res) => {
     );
 
     const data = await response.json();
+
+    console.log("🔍 STATUS PAGAMENTO:", data);
+
     res.json(data);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ ERRO CHECK:", err);
+    res.status(500).json({ error: "Erro ao verificar pagamento" });
   }
 });
 
-// Webhook
+// =========================
+// WEBHOOK
+// =========================
 app.post("/webhook", (req, res) => {
-  console.log("Webhook recebido:", req.body);
+  console.log("🔔 WEBHOOK RECEBIDO:", req.body);
   res.sendStatus(200);
 });
 
+// =========================
+// START SERVER
+// =========================
 app.listen(PORT, () => {
-  console.log("Servidor rodando na porta", PORT);
+  console.log("🚀 Servidor rodando na porta", PORT);
 });
