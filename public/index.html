@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento PIX</title>
+
+  <!-- CSS -->
+  <link href="bootstrap.min.css" rel="stylesheet">
+  <link href="signin.css" rel="stylesheet">
+  <link href="fancybox.min.css" rel="stylesheet">
+
+  <!-- JS -->
+  <script src="jquery-3.6.4.min.js"></script>
+  <script src="jquery.mask.min.js"></script>
+  <script src="qrcode.min.js"></script>
+  <script src="fancybox.umd.min.js"></script>
+
+  <!-- Mercado Pago -->
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+  <style>
+    body { font-family: Arial; }
+    #qrcode img { margin: 0 auto; padding: 5px 0; }
+  </style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div id="loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;text-align:center;z-index:9999;padding-top:20px;">
+  <img src="Loading_icon.gif" style="width:200px;">
+</div>
+
+<!-- CONTAINER -->
+<div style="width:100%;max-width:600px;margin:0 auto;">
+
+  <!-- INFO -->
+  <div id="info_pagamento" style="display:none;text-align:center;">
+    <img class="mb-4" src="logo.png" style="width:80px;">
+    <h3 id="descricao"></h3>
+    <h3 id="valor"></h3>
+  </div>
+
+  <!-- BOTÃO PAGAR -->
+  <div style="text-align:center;margin-top:30px;">
+    <button onclick="criarPagamento()" class="btn btn-primary">
+      Gerar Pagamento PIX
+    </button>
+  </div>
+
+  <!-- QR CODE -->
+  <div id="qrcode" style="text-align:center;margin-top:20px;"></div>
+
+  <!-- STATUS -->
+  <div id="status" style="text-align:center;margin-top:20px;"></div>
+
+</div>
+
+<script>
+const VALOR = 10.00;
+const DESCRICAO = "Pagamento teste";
+
+// Criar pagamento
+async function criarPagamento() {
+  document.getElementById("loading").style.display = "block";
+
+  const res = await fetch("/create-payment", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      transaction_amount: VALOR,
+      payment_method_id: "pix",
+      description: DESCRICAO,
+      payer: {
+        email: "teste@teste.com"
+      }
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("loading").style.display = "none";
+
+  console.log(data);
+
+  if (data.point_of_interaction) {
+    const qr = data.point_of_interaction.transaction_data.qr_code;
+
+    // Mostrar QR Code
+    document.getElementById("qrcode").innerHTML = "";
+    new QRCode(document.getElementById("qrcode"), qr);
+
+    document.getElementById("descricao").innerText = DESCRICAO;
+    document.getElementById("valor").innerText = "R$ " + VALOR;
+
+    verificarPagamento(data.id);
+  } else {
+    alert("Erro ao gerar pagamento");
+  }
+}
+
+// Verificar pagamento
+async function verificarPagamento(id) {
+  const interval = setInterval(async () => {
+
+    const res = await fetch("/check-payment/" + id);
+    const data = await res.json();
+
+    console.log("Status:", data.status);
+
+    if (data.status === "approved") {
+      clearInterval(interval);
+
+      document.getElementById("status").innerHTML = `
+        <h2>Pagamento aprovado!</h2>
+        <img src="check_ok.png" width="120">
+      `;
+    }
+
+  }, 5000);
+}
+</script>
+
+</body>
+</html>
