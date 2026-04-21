@@ -39,9 +39,7 @@
       width: 100%;
       max-width: 360px;
 
-      /* AMARELO TRANSPARENTE */
       background: rgba(255, 235, 150, 0.85);
-
       backdrop-filter: blur(6px);
       border-radius: 18px;
 
@@ -92,14 +90,6 @@
       font-size: 14px;
     }
 
-    /* TIMER */
-    .timer {
-      font-size: 18px;
-      font-weight: bold;
-      color: #8b0000;
-      margin: 8px 0;
-    }
-
     #status h2 {
       font-size: 17px;
     }
@@ -116,7 +106,6 @@
       padding-top: 50%;
       text-align: center;
     }
-
   </style>
 </head>
 
@@ -135,8 +124,6 @@
   <h3 id="descricao"></h3>
   <div class="valor" id="valor"></div>
 
-  <div class="timer" id="timer">10:00</div>
-
   <div id="qrcode"></div>
 
   <div id="pixCopia"></div>
@@ -150,32 +137,6 @@ const params = new URLSearchParams(window.location.search);
 
 const VALOR = params.get("valor") ? Number(params.get("valor")) : 10.00;
 const DESCRICAO = params.get("descricao") || "Pagamento PIX";
-
-// =========================
-// TIMER
-// =========================
-let tempo = 600;
-
-function iniciarTimer() {
-  const el = document.getElementById("timer");
-
-  const intervalo = setInterval(() => {
-    tempo--;
-
-    const min = Math.floor(tempo / 60);
-    const sec = tempo % 60;
-
-    el.innerText =
-      String(min).padStart(2, '0') + ":" +
-      String(sec).padStart(2, '0');
-
-    if (tempo <= 0) {
-      clearInterval(intervalo);
-      el.innerText = "Expirado ❌";
-    }
-
-  }, 1000);
-}
 
 // =========================
 // PAGAMENTO
@@ -212,7 +173,6 @@ async function criarPagamento() {
       <button onclick="copiarPix()" class="btn btn-success">Copiar PIX</button>
     `;
 
-    iniciarTimer();
     verificarPagamento(data.id);
 
   } else {
