@@ -27,6 +27,8 @@ app.post("/create-payment", async (req, res) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.MP_TOKEN}`,
+        // 🔥 OBRIGATÓRIO (corrige seu erro)
+        "X-Idempotency-Key": Date.now().toString()
       },
       body: JSON.stringify({
         transaction_amount: Number(req.body.transaction_amount),
@@ -41,7 +43,6 @@ app.post("/create-payment", async (req, res) => {
 
     const data = await response.json();
 
-    // 🔥 DEBUG IMPORTANTE
     console.log("💰 RESPOSTA MERCADO PAGO:", data);
 
     if (!response.ok) {
