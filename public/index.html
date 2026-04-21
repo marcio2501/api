@@ -13,59 +13,55 @@
   <script src="jquery-3.6.4.min.js"></script>
   <script src="qrcode.min.js"></script>
 
-  <!-- Mercado Pago -->
-  <script src="https://sdk.mercadopago.com/js/v2"></script>
-
   <style>
-    body { font-family: Arial; }
+    body { font-family: Arial; text-align:center; }
     #qrcode img { margin: 0 auto; padding: 5px 0; }
+    textarea { resize:none; }
   </style>
 </head>
 
 <body>
 
 <!-- LOADING -->
-<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;text-align:center;z-index:9999;padding-top:20px;">
+<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;z-index:9999;padding-top:20px;">
   <img src="Loading_icon.gif" style="width:200px;">
 </div>
 
 <!-- CONTAINER -->
-<div style="width:100%;max-width:600px;margin:0 auto;">
+<div style="width:100%;max-width:500px;margin:0 auto;">
 
   <!-- INFO -->
-  <div id="info_pagamento" style="display:none;text-align:center;">
-    <img class="mb-4" src="logo.png" style="width:80px;">
+  <div id="info_pagamento" style="display:none;">
+    <img src="logo.png" style="width:80px;margin-top:20px;">
     <h3 id="descricao"></h3>
     <h3 id="valor"></h3>
   </div>
 
-  <!-- BOTÃO PAGAR -->
-  <div style="text-align:center;margin-top:30px;">
-    <button onclick="criarPagamento()" class="btn btn-primary">
-      Gerar Pagamento PIX
-    </button>
-  </div>
-
   <!-- QR CODE -->
-  <div id="qrcode" style="text-align:center;margin-top:20px;"></div>
+  <div id="qrcode" style="margin-top:20px;"></div>
+
+  <!-- PIX COPIA E COLA -->
+  <div id="pixCopia" style="margin-top:20px;"></div>
 
   <!-- STATUS -->
-  <div id="status" style="text-align:center;margin-top:20px;"></div>
+  <div id="status" style="margin-top:20px;"></div>
 
 </div>
 
 <script>
-// 🔥 PEGAR PARAMETROS DA URL
+// 🔥 PARAMETROS URL
 const params = new URLSearchParams(window.location.search);
 
 const VALOR_URL = params.get("valor");
 const DESCRICAO_URL = params.get("descricao");
 
-// 🔥 DEFINIR VALORES
+// 🔥 DEFINIÇÃO
 let VALOR = VALOR_URL ? Number(VALOR_URL) : 10.00;
 let DESCRICAO = DESCRICAO_URL ? DESCRICAO_URL : "Pagamento PIX";
 
-// Criar pagamento
+// =========================
+// CRIAR PAGAMENTO
+// =========================
 async function criarPagamento() {
   document.getElementById("loading").style.display = "block";
 
@@ -89,24 +85,46 @@ async function criarPagamento() {
   console.log(data);
 
   if (data.point_of_interaction) {
-    const qr = data.point_of_interaction.transaction_data.qr_code;
 
-    // Mostrar QR Code
+    const qr = data.point_of_interaction.transaction_data.qr_code;
+    const copiaCola = data.point_of_interaction.transaction_data.qr_code;
+
+    // QR CODE
     document.getElementById("qrcode").innerHTML = "";
     new QRCode(document.getElementById("qrcode"), qr);
 
-    // Mostrar info
+    // INFO
     document.getElementById("info_pagamento").style.display = "block";
     document.getElementById("descricao").innerText = DESCRICAO;
     document.getElementById("valor").innerText = "R$ " + VALOR;
 
+    // PIX COPIA E COLA
+    document.getElementById("pixCopia").innerHTML = `
+      <textarea id="pixTexto" style="width:100%;height:80px;">${copiaCola}</textarea>
+      <br><br>
+      <button onclick="copiarPix()" class="btn btn-success">Copiar PIX</button>
+    `;
+
     verificarPagamento(data.id);
+
   } else {
     alert("Erro ao gerar pagamento");
   }
 }
 
-// Verificar pagamento
+// =========================
+// COPIAR PIX
+// =========================
+function copiarPix() {
+  const texto = document.getElementById("pixTexto");
+  texto.select();
+  document.execCommand("copy");
+  alert("PIX copiado!");
+}
+
+// =========================
+// VERIFICAR PAGAMENTO
+// =========================
 async function verificarPagamento(id) {
   const interval = setInterval(async () => {
 
@@ -127,7 +145,7 @@ async function verificarPagamento(id) {
   }, 5000);
 }
 
-// 🔥 AUTO GERAR SE TIVER VALOR NA URL
+// 🔥 AUTO START
 if (VALOR_URL) {
   criarPagamento();
 }
