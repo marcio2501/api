@@ -8,13 +8,10 @@
   <!-- CSS -->
   <link href="bootstrap.min.css" rel="stylesheet">
   <link href="signin.css" rel="stylesheet">
-  <link href="fancybox.min.css" rel="stylesheet">
 
   <!-- JS -->
   <script src="jquery-3.6.4.min.js"></script>
-  <script src="jquery.mask.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="fancybox.umd.min.js"></script>
 
   <!-- Mercado Pago -->
   <script src="https://sdk.mercadopago.com/js/v2"></script>
@@ -28,7 +25,7 @@
 <body>
 
 <!-- LOADING -->
-<div id="loading" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;text-align:center;z-index:9999;padding-top:20px;">
+<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;text-align:center;z-index:9999;padding-top:20px;">
   <img src="Loading_icon.gif" style="width:200px;">
 </div>
 
@@ -58,8 +55,15 @@
 </div>
 
 <script>
-const VALOR = 10.00;
-const DESCRICAO = "Pagamento teste";
+// 🔥 PEGAR PARAMETROS DA URL
+const params = new URLSearchParams(window.location.search);
+
+const VALOR_URL = params.get("valor");
+const DESCRICAO_URL = params.get("descricao");
+
+// 🔥 DEFINIR VALORES
+let VALOR = VALOR_URL ? Number(VALOR_URL) : 10.00;
+let DESCRICAO = DESCRICAO_URL ? DESCRICAO_URL : "Pagamento PIX";
 
 // Criar pagamento
 async function criarPagamento() {
@@ -91,6 +95,8 @@ async function criarPagamento() {
     document.getElementById("qrcode").innerHTML = "";
     new QRCode(document.getElementById("qrcode"), qr);
 
+    // Mostrar info
+    document.getElementById("info_pagamento").style.display = "block";
     document.getElementById("descricao").innerText = DESCRICAO;
     document.getElementById("valor").innerText = "R$ " + VALOR;
 
@@ -119,6 +125,11 @@ async function verificarPagamento(id) {
     }
 
   }, 5000);
+}
+
+// 🔥 AUTO GERAR SE TIVER VALOR NA URL
+if (VALOR_URL) {
+  criarPagamento();
 }
 </script>
 
