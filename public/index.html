@@ -5,141 +5,164 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pagamento PIX</title>
 
-  <!-- CSS -->
   <link href="bootstrap.min.css" rel="stylesheet">
-  <link href="signin.css" rel="stylesheet">
-
-  <!-- JS -->
-  <script src="jquery-3.6.4.min.js"></script>
   <script src="qrcode.min.js"></script>
 
   <style>
     body {
-      font-family: Arial;
-      text-align: center;
-      padding: 10px;
+      font-family: Arial, sans-serif;
+      margin: 0;
 
-      /* FUNDO DOURADO BONITO */
+      /* FUNDO DOURADO SUAVE */
       background: linear-gradient(135deg, #f7d774, #f2c94c, #d4af37);
+      display: flex;
+      justify-content: center;
+      align-items: center;
       min-height: 100vh;
     }
 
     .container-pagamento {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 20px;
+      width: 95%;
+      max-width: 380px;
 
-      /* CAIXA BRANCA PRA NÃO PREJUDICAR LEITURA */
-      background: #ffffff;
-      border-radius: 15px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      background: #fff;
+      border-radius: 18px;
+      padding: 18px 15px;
+
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      text-align: center;
     }
 
-    #qrcode canvas,
-    #qrcode img {
+    img.logo {
+      width: 65px;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin: 5px 0;
+      color: #333;
+    }
+
+    .valor {
+      font-size: 22px;
+      font-weight: bold;
+      color: #111;
+    }
+
+    #qrcode canvas {
       width: 100% !important;
-      max-width: 280px;
-      height: auto !important;
+      max-width: 220px;
+      margin: 10px auto;
     }
 
     textarea {
       width: 100%;
-      height: 80px;
-      font-size: 12px;
-      resize: none;
+      height: 65px;
+      font-size: 11px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
+      resize: none;
     }
 
     button {
       width: 100%;
-      max-width: 200px;
+      margin-top: 8px;
       border-radius: 8px;
+      font-size: 14px;
     }
 
-    h3 {
+    /* CRONÔMETRO */
+    .timer {
       font-size: 20px;
-      color: #333;
-    }
-
-    /* CONTADOR */
-    .contador {
-      font-size: 28px;
       font-weight: bold;
-      color: #2e7d32;
+      color: #d32f2f;
       margin-top: 10px;
     }
 
-    /* LOADING COM FUNDO SUAVE */
+    /* STATUS */
+    #status h2 {
+      font-size: 18px;
+    }
+
+    /* LOADING */
     #loading {
-      background: rgba(255,255,255,0.95) !important;
+      display: none;
+      position: fixed;
+      background: rgba(255,255,255,0.95);
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9999;
+      padding-top: 40%;
+      text-align: center;
     }
 
-    @media (max-width: 480px) {
-      h3 {
-        font-size: 18px;
-      }
-
-      #qrcode canvas,
-      #qrcode img {
-        max-width: 220px;
-      }
-
-      textarea {
-        font-size: 11px;
-      }
-
-      img {
-        max-width: 70px;
-      }
-    }
   </style>
 </head>
 
 <body>
 
-<!-- LOADING -->
-<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;padding-top:20px;">
-  <img src="Loading_icon.gif" style="width:200px;">
+<div id="loading">
+  <img src="Loading_icon.gif" width="120">
 </div>
 
-<!-- CONTAINER -->
 <div class="container-pagamento">
 
-  <!-- INFO -->
-  <div id="info_pagamento" style="display:none;">
-    <img src="logo.png" style="width:80px;margin-top:20px;">
-    <h3 id="descricao"></h3>
-    <h3 id="valor"></h3>
-  </div>
+  <img src="logo.png" class="logo">
 
-  <!-- QR CODE -->
-  <div id="qrcode" style="margin-top:20px;"></div>
+  <h3 id="descricao"></h3>
+  <div class="valor" id="valor"></div>
 
-  <!-- PIX COPIA E COLA -->
-  <div id="pixCopia" style="margin-top:20px;"></div>
+  <!-- TIMER -->
+  <div class="timer" id="timer">10:00</div>
 
-  <!-- STATUS -->
-  <div id="status" style="margin-top:20px;"></div>
+  <div id="qrcode"></div>
+
+  <div id="pixCopia"></div>
+
+  <div id="status"></div>
 
 </div>
 
 <script>
-// PARAMETROS URL
 const params = new URLSearchParams(window.location.search);
 
-const VALOR_URL = params.get("valor");
-const DESCRICAO_URL = params.get("descricao");
-
-// DEFINIÇÃO
-let VALOR = VALOR_URL ? Number(VALOR_URL) : 10.00;
-let DESCRICAO = DESCRICAO_URL ? DESCRICAO_URL : "Pagamento PIX";
+const VALOR = params.get("valor") ? Number(params.get("valor")) : 10.00;
+const DESCRICAO = params.get("descricao") || "Pagamento PIX";
 
 // =========================
-// CRIAR PAGAMENTO
+// TIMER (10 minutos)
+// =========================
+let tempo = 600;
+
+function iniciarTimer() {
+  const el = document.getElementById("timer");
+
+  const intervalo = setInterval(() => {
+    tempo--;
+
+    const min = Math.floor(tempo / 60);
+    const sec = tempo % 60;
+
+    el.innerText =
+      String(min).padStart(2, '0') + ":" +
+      String(sec).padStart(2, '0');
+
+    if (tempo <= 0) {
+      clearInterval(intervalo);
+      el.innerText = "Expirado ❌";
+    }
+
+  }, 1000);
+}
+
+// =========================
+// PAGAMENTO
 // =========================
 async function criarPagamento() {
+
   document.getElementById("loading").style.display = "block";
 
   const res = await fetch("/create-payment", {
@@ -149,34 +172,28 @@ async function criarPagamento() {
       transaction_amount: VALOR,
       payment_method_id: "pix",
       description: DESCRICAO,
-      payer: {
-        email: "teste@teste.com"
-      }
+      payer: { email: "teste@teste.com" }
     })
   });
 
   const data = await res.json();
-
   document.getElementById("loading").style.display = "none";
 
   if (data.point_of_interaction) {
 
     const qr = data.point_of_interaction.transaction_data.qr_code;
-    const copiaCola = data.point_of_interaction.transaction_data.qr_code;
 
-    document.getElementById("qrcode").innerHTML = "";
     new QRCode(document.getElementById("qrcode"), qr);
 
-    document.getElementById("info_pagamento").style.display = "block";
     document.getElementById("descricao").innerText = DESCRICAO;
     document.getElementById("valor").innerText = "R$ " + VALOR;
 
     document.getElementById("pixCopia").innerHTML = `
-      <textarea id="pixTexto">${copiaCola}</textarea>
-      <br><br>
+      <textarea id="pixTexto">${qr}</textarea>
       <button onclick="copiarPix()" class="btn btn-success">Copiar PIX</button>
     `;
 
+    iniciarTimer();
     verificarPagamento(data.id);
 
   } else {
@@ -185,19 +202,20 @@ async function criarPagamento() {
 }
 
 // =========================
-// COPIAR PIX
+// COPIAR
 // =========================
 function copiarPix() {
-  const texto = document.getElementById("pixTexto");
-  texto.select();
+  const t = document.getElementById("pixTexto");
+  t.select();
   document.execCommand("copy");
   alert("PIX copiado!");
 }
 
 // =========================
-// VERIFICAR PAGAMENTO
+// VERIFICAR
 // =========================
 async function verificarPagamento(id) {
+
   const interval = setInterval(async () => {
 
     const res = await fetch("/check-payment/" + id);
@@ -208,39 +226,19 @@ async function verificarPagamento(id) {
 
       document.getElementById("status").innerHTML = `
         <h2>Pagamento aprovado ✅</h2>
-        <p>Redirecionando para o chat...</p>
-        <div class="contador" id="contador">10</div>
-        <img src="check_ok.png" width="120">
+        <p>Redirecionando...</p>
       `;
 
-      iniciarContador();
+      setTimeout(() => {
+        window.location.href = "https://tawk.to/chat/69ccd2878bf0a61c2cb9ba4f/1jl41coc1";
+      }, 3000);
     }
 
-  }, 5000);
+  }, 4000);
 }
 
-// =========================
-// CONTADOR
-// =========================
-function iniciarContador() {
-  let tempo = 10;
-  const contadorEl = document.getElementById("contador");
-
-  const intervalo = setInterval(() => {
-    tempo--;
-    contadorEl.innerText = tempo;
-
-    if (tempo <= 0) {
-      clearInterval(intervalo);
-      window.location.href = "https://tawk.to/chat/69ccd2878bf0a61c2cb9ba4f/1jl41coc1";
-    }
-  }, 1000);
-}
-
-// AUTO START
-if (VALOR_URL) {
-  criarPagamento();
-}
+// START
+criarPagamento();
 </script>
 
 </body>
