@@ -33,7 +33,7 @@ app.post("/create-payment", async (req, res) => {
         payment_method_id: "pix",
         description: req.body.description || "Pagamento PIX",
         payer: {
-          email: "test_user_123@testuser.com"
+          email: "marciodoxosse@gmail.com"
         },
         notification_url: process.env.WEBHOOK_URL || null,
       }),
