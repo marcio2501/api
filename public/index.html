@@ -1,17 +1,18 @@
-```html
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#fff9df">
-  <meta name="color-scheme" content="light">
   <title>Pagamento PIX</title>
+
+  <script src="qrcode.min.js"></script>
 
   <style>
     :root {
       --fundo: #fff9df;
-      --branco: #fff;
+      --cartao: #ffffff;
       --amarelo: #f4c430;
       --amarelo-hover: #e5b51d;
       --texto: #292929;
@@ -40,8 +41,8 @@
       justify-content: center;
       background: var(--fundo);
       color: var(--texto);
-      font-family: Inter, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Arial, sans-serif;
     }
 
     button, a {
@@ -53,74 +54,82 @@
       outline-offset: 3px;
     }
 
-    .pagina {
+    .container-pagamento {
       width: 100%;
-      max-width: 380px;
+      max-width: 390px;
       margin: auto;
     }
 
     .cartao {
-      padding: 21px 19px;
-      background: var(--branco);
+      padding: 24px 20px;
+      text-align: center;
+      background: var(--cartao);
       border: 1px solid var(--borda);
       border-radius: 22px;
       box-shadow: var(--sombra);
-      text-align: center;
       animation: aparecer .35s ease;
     }
 
     .logo {
-      width: 50px;
-      height: 50px;
-      margin: 0 auto 11px;
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 14px;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+      border-radius: 17px;
       background: #fff4c4;
-      border-radius: 15px;
-      color: #8b6a00;
     }
 
-    .logo svg {
-      width: 30px;
-      height: 30px;
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     h1 {
       margin: 0;
-      font-size: 23px;
+      font-size: 24px;
       font-weight: 800;
-      line-height: 1.25;
       letter-spacing: -.5px;
     }
 
     .subtitulo {
-      margin: 7px 0 16px;
+      margin: 8px 0 19px;
+      color: var(--cinza);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .informacoes {
+      padding: 16px 12px;
+      margin-bottom: 17px;
+      border: 1px solid #f5edda;
+      border-radius: 15px;
+      background: #fffaf0;
+    }
+
+    .descricao {
+      margin: 0 0 10px;
       color: var(--cinza);
       font-size: 13px;
       line-height: 1.5;
+      overflow-wrap: anywhere;
     }
 
-    .valor-total {
-      margin: 0 0 16px;
-      padding: 15px 10px;
-      background: #fffaf0;
-      border: 1px solid #f5edda;
-      border-radius: 14px;
-    }
-
-    .valor-total small {
+    .valor-legenda {
       display: block;
       margin-bottom: 4px;
       color: var(--cinza);
       font-size: 12px;
     }
 
-    .valor-total strong {
+    .valor {
       display: block;
-      font-size: clamp(27px, 7vw, 33px);
-      font-weight: 800;
-      letter-spacing: -.7px;
+      font-size: clamp(28px, 8vw, 34px);
+      font-weight: 850;
+      letter-spacing: -.8px;
       overflow-wrap: anywhere;
     }
 
@@ -128,12 +137,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 0 auto 13px;
     }
 
     #qrcode {
-      width: 175px;
-      height: 175px;
+      width: 180px;
+      height: 180px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -152,20 +160,20 @@
     }
 
     .qr-legenda {
-      margin: 8px 0 0;
+      margin: 9px 0 15px;
       color: var(--cinza);
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     .botao {
       width: 100%;
-      min-height: 46px;
-      padding: 12px 16px;
+      min-height: 48px;
+      padding: 13px 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 9px;
       border: 0;
       border-radius: 12px;
       background: var(--amarelo);
@@ -186,22 +194,22 @@
     }
 
     .botao:disabled {
-      opacity: .65;
+      opacity: .6;
       cursor: wait;
     }
 
     .botao svg {
-      width: 18px;
-      height: 18px;
+      width: 19px;
+      height: 19px;
       flex-shrink: 0;
     }
 
     .status {
-      min-height: 18px;
-      margin: 9px 0 0;
+      min-height: 20px;
+      margin: 11px 0 0;
       color: var(--cinza);
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.6;
       overflow-wrap: anywhere;
     }
 
@@ -216,7 +224,7 @@
 
     .divisor {
       height: 1px;
-      margin: 14px 0 11px;
+      margin: 17px 0 13px;
       background: #f0ede5;
     }
 
@@ -230,26 +238,58 @@
     }
 
     .seguranca svg {
-      width: 15px;
-      height: 15px;
+      width: 16px;
+      height: 16px;
       flex-shrink: 0;
     }
 
     .carregando {
-      width: 23px;
-      height: 23px;
+      width: 25px;
+      height: 25px;
       border: 3px solid #eee8d4;
       border-top-color: #8b6a00;
       border-radius: 50%;
       animation: girar .7s linear infinite;
     }
 
-    /* Tela de pagamento aprovado */
+    /* Carregamento */
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(255, 249, 223, .96);
+    }
+
+    .loading.visivel {
+      display: flex;
+    }
+
+    .loading-conteudo {
+      text-align: center;
+    }
+
+    .loading-conteudo .carregando {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 14px;
+    }
+
+    .loading-conteudo p {
+      color: var(--cinza);
+      font-size: 14px;
+    }
+
+    /* Pagamento aprovado */
 
     .tela-aprovado {
       position: fixed;
       inset: 0;
-      z-index: 20;
+      z-index: 100;
       display: none;
       align-items: center;
       justify-content: center;
@@ -265,19 +305,19 @@
 
     .aprovado-cartao {
       width: 100%;
-      max-width: 380px;
+      max-width: 390px;
       margin: auto;
       padding: 30px 23px;
       border: 1px solid var(--borda);
       border-radius: 23px;
-      background: var(--branco);
+      background: var(--cartao);
       box-shadow: var(--sombra);
       text-align: center;
     }
 
     .icone-aprovado {
-      width: 72px;
-      height: 72px;
+      width: 74px;
+      height: 74px;
       margin: 0 auto 17px;
       display: flex;
       align-items: center;
@@ -289,24 +329,26 @@
     }
 
     .icone-aprovado svg {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
     }
 
-    .aprovado-cartao h1 {
+    .aprovado-cartao h2 {
+      margin: 0;
       font-size: 25px;
+      letter-spacing: -.4px;
     }
 
     .aprovado-texto {
-      margin: 11px 0 20px;
+      margin: 12px 0 21px;
       color: var(--cinza);
       font-size: 14px;
       line-height: 1.65;
     }
 
     .contador {
-      width: 62px;
-      height: 62px;
+      width: 66px;
+      height: 66px;
       margin: 0 auto 20px;
       display: flex;
       align-items: center;
@@ -315,7 +357,7 @@
       border-top-color: var(--verde);
       border-radius: 50%;
       color: var(--verde);
-      font-size: 25px;
+      font-size: 26px;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
     }
@@ -357,17 +399,13 @@
       }
 
       .cartao {
-        padding: 18px 15px;
+        padding: 20px 15px;
         border-radius: 19px;
       }
 
       #qrcode {
-        width: 160px;
-        height: 160px;
-      }
-
-      .subtitulo {
-        margin-bottom: 13px;
+        width: 165px;
+        height: 165px;
       }
     }
 
@@ -382,16 +420,16 @@
       }
 
       .logo {
-        width: 40px;
-        height: 40px;
-        margin-bottom: 7px;
+        width: 43px;
+        height: 43px;
+        margin-bottom: 8px;
       }
 
       .subtitulo {
         margin: 5px 0 10px;
       }
 
-      .valor-total {
+      .informacoes {
         padding: 10px;
         margin-bottom: 10px;
       }
@@ -402,11 +440,11 @@
       }
 
       .qr-legenda {
-        margin-top: 5px;
+        margin: 5px 0 10px;
       }
 
       .divisor {
-        margin: 9px 0;
+        margin: 10px 0;
       }
     }
 
@@ -422,40 +460,37 @@
 </head>
 
 <body>
-  <main class="pagina" id="paginaPagamento">
-    <section class="cartao" aria-labelledby="titulo">
 
-      <div class="logo" aria-label="PIX">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m7.2 7.2 4.8-4.4 4.8 4.4-4.8 4.5-4.8-4.5Z"
-            stroke="currentColor" stroke-width="1.8"
-            stroke-linejoin="round"/>
-          <path d="m7.2 16.8 4.8-4.4 4.8 4.4-4.8 4.4-4.8-4.4Z"
-            stroke="currentColor" stroke-width="1.8"
-            stroke-linejoin="round"/>
-          <path d="M2.8 12l4.4-4.8 4.5 4.8-4.5 4.8L2.8 12Z"
-            stroke="currentColor" stroke-width="1.8"
-            stroke-linejoin="round"/>
-          <path d="m16.8 7.2 4.4 4.8-4.4 4.8-4.4-4.8 4.4-4.8Z"
-            stroke="currentColor" stroke-width="1.8"
-            stroke-linejoin="round"/>
-        </svg>
+  <div class="loading" id="loading" aria-live="polite">
+    <div class="loading-conteudo">
+      <div class="carregando"></div>
+      <p>Preparando seu pagamento PIX...</p>
+    </div>
+  </div>
+
+  <main class="container-pagamento" id="paginaPagamento">
+    <section class="cartao">
+
+      <div class="logo">
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
       </div>
 
-      <h1 id="titulo">Pagamento via PIX</h1>
+      <h1>Pagamento via PIX</h1>
 
       <p class="subtitulo">
-        Escaneie o QR Code ou copie o código para pagar.
+        Confira os detalhes e faça seu pagamento.
       </p>
 
-      <div class="valor-total">
-        <small>Valor a pagar</small>
-        <strong id="valor">—</strong>
+      <div class="informacoes" id="infoPagamento" hidden>
+        <p class="descricao" id="descricao"></p>
+
+        <span class="valor-legenda">Valor a pagar</span>
+        <strong class="valor" id="valor">—</strong>
       </div>
 
       <div class="qr-area">
         <div id="qrcode" aria-label="QR Code do pagamento PIX">
-          <span class="carregando" aria-label="Carregando"></span>
+          <span class="carregando"></span>
         </div>
 
         <p class="qr-legenda">
@@ -490,18 +525,15 @@
         </svg>
         Pagamento processado com segurança
       </div>
+
     </section>
   </main>
 
-  <!-- Tela exibida após a confirmação do pagamento -->
-  <section
-    class="tela-aprovado"
-    id="telaAprovado"
-    role="status"
-    aria-live="polite"
-    aria-labelledby="tituloAprovado"
-  >
+  <section class="tela-aprovado" id="telaAprovado"
+    aria-labelledby="tituloAprovado" aria-live="polite">
+
     <div class="aprovado-cartao">
+
       <div class="icone-aprovado" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="m5 12 4.5 4.5L19 7"
@@ -510,21 +542,17 @@
         </svg>
       </div>
 
-      <h1 id="tituloAprovado">Pagamento aprovado!</h1>
+      <h2 id="tituloAprovado">Pagamento aprovado!</h2>
 
       <p class="aprovado-texto">
         Seu pagamento foi confirmado com sucesso.
         Você será direcionado para o chat automaticamente.
       </p>
 
-      <div class="contador" id="contador"
-        aria-label="Segundos restantes">10</div>
+      <div class="contador" id="contador">10</div>
 
-      <a
-        class="botao botao-chat"
-        id="botaoIrChat"
-        href="https://atendimento2-49jw.onrender.com/?role=cliente"
-      >
+      <a class="botao botao-chat" id="botaoIrChat"
+        href="https://atendimento2-49jw.onrender.com/?role=cliente">
         Ir para o chat agora
       </a>
 
@@ -532,11 +560,9 @@
         Redirecionando em
         <span id="segundosRestantes">10</span> segundos...
       </p>
+
     </div>
   </section>
-
-  <!-- Coloque qrcode.min.js na mesma pasta deste arquivo -->
-  <script src="qrcode.min.js"></script>
 
   <script>
     "use strict";
@@ -544,41 +570,29 @@
     const URL_CHAT =
       "https://atendimento2-49jw.onrender.com/?role=cliente";
 
+    const INTERVALO_VERIFICACAO = 5000;
     const TEMPO_REDIRECIONAMENTO = 10;
-    const INTERVALO_VERIFICACAO = 3000;
 
-    const parametros = new URLSearchParams(location.search);
-    const valorParametro = parametros.get("valor");
+    const params = new URLSearchParams(location.search);
 
-    const paginaPagamento =
-      document.getElementById("paginaPagamento");
+    const valorURL = params.get("valor");
+    const descricaoURL = params.get("descricao") || "Pagamento PIX";
 
-    const valorElemento =
-      document.getElementById("valor");
-
-    const qrElemento =
-      document.getElementById("qrcode");
-
-    const statusElemento =
-      document.getElementById("status");
-
-    const botaoCopiar =
-      document.getElementById("botaoCopiar");
-
-    const textoBotaoCopiar =
-      document.getElementById("textoBotaoCopiar");
-
-    const telaAprovado =
-      document.getElementById("telaAprovado");
-
-    const contadorElemento =
-      document.getElementById("contador");
-
-    const segundosElemento =
-      document.getElementById("segundosRestantes");
-
-    const botaoIrChat =
-      document.getElementById("botaoIrChat");
+    const elementos = {
+      loading: document.getElementById("loading"),
+      pagina: document.getElementById("paginaPagamento"),
+      info: document.getElementById("infoPagamento"),
+      descricao: document.getElementById("descricao"),
+      valor: document.getElementById("valor"),
+      qr: document.getElementById("qrcode"),
+      status: document.getElementById("status"),
+      copiar: document.getElementById("botaoCopiar"),
+      textoCopiar: document.getElementById("textoBotaoCopiar"),
+      telaAprovado: document.getElementById("telaAprovado"),
+      contador: document.getElementById("contador"),
+      segundos: document.getElementById("segundosRestantes"),
+      irChat: document.getElementById("botaoIrChat")
+    };
 
     let valorPagamento = NaN;
     let codigoPix = "";
@@ -586,15 +600,20 @@
     let timerVerificacao = null;
     let timerRedirecionamento = null;
     let verificando = false;
-    let pagamentoAprovado = false;
-    let segundosRestantes = TEMPO_REDIRECIONAMENTO;
+    let aprovado = false;
 
-    botaoIrChat.href = URL_CHAT;
+    elementos.irChat.href = URL_CHAT;
 
     function interpretarValor(valor) {
-      if (!valor) return NaN;
+      if (valor === null || valor === undefined || !String(valor).trim()) {
+        return NaN;
+      }
 
-      const normalizado = String(valor).trim().replace(",", ".");
+      let normalizado = String(valor).trim().replace(/\s/g, "");
+
+      if (normalizado.includes(",")) {
+        normalizado = normalizado.replace(/\./g, "").replace(",", ".");
+      }
 
       if (!/^\d+(\.\d{1,2})?$/.test(normalizado)) {
         return NaN;
@@ -602,26 +621,24 @@
 
       const numero = Number(normalizado);
 
-      if (!Number.isFinite(numero) || numero <= 0) {
-        return NaN;
-      }
-
-      return Math.round(numero * 100) / 100;
+      return Number.isFinite(numero) && numero > 0
+        ? Math.round(numero * 100) / 100
+        : NaN;
     }
 
-    function formatarMoeda(valor) {
+    function moeda(valor) {
       return new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL"
       }).format(valor);
     }
 
-    function mostrarStatus(mensagem, tipo = "") {
-      statusElemento.textContent = mensagem;
-      statusElemento.className = "status";
+    function status(mensagem, tipo = "") {
+      elementos.status.textContent = mensagem;
+      elementos.status.className = "status";
 
       if (tipo) {
-        statusElemento.classList.add(tipo);
+        elementos.status.classList.add(tipo);
       }
     }
 
@@ -633,32 +650,24 @@
     }
 
     async function criarPagamento() {
-      valorPagamento = interpretarValor(valorParametro);
+      valorPagamento = interpretarValor(valorURL);
 
       if (!Number.isFinite(valorPagamento)) {
-        qrElemento.replaceChildren();
-        valorElemento.textContent = "—";
-
-        mostrarStatus(
-          "Valor ausente ou inválido. Verifique o parâmetro valor na URL.",
-          "erro"
-        );
+        elementos.qr.replaceChildren();
+        status("Valor ausente ou inválido. Verifique o parâmetro valor na URL.", "erro");
         return;
       }
-
-      valorElemento.textContent = formatarMoeda(valorPagamento);
 
       if (typeof QRCode === "undefined") {
-        qrElemento.replaceChildren();
-
-        mostrarStatus(
-          "Não foi possível carregar o QR Code. Verifique qrcode.min.js.",
-          "erro"
-        );
+        elementos.qr.replaceChildren();
+        status("Não foi possível carregar o QR Code. Verifique qrcode.min.js.", "erro");
         return;
       }
 
-      mostrarStatus("Gerando seu pagamento PIX...");
+      elementos.info.hidden = false;
+      elementos.descricao.textContent = descricaoURL;
+      elementos.valor.textContent = moeda(valorPagamento);
+      elementos.loading.classList.add("visivel");
 
       try {
         const resposta = await fetch("/create-payment", {
@@ -669,7 +678,7 @@
           body: JSON.stringify({
             transaction_amount: valorPagamento,
             payment_method_id: "pix",
-            description: "Pagamento PIX",
+            description: descricaoURL,
             payer: {
               email: "teste@teste.com"
             }
@@ -693,39 +702,35 @@
         pagamentoId = dados.id;
         codigoPix = transacao.qr_code;
 
-        qrElemento.replaceChildren();
+        elementos.qr.replaceChildren();
 
-        new QRCode(qrElemento, {
+        new QRCode(elementos.qr, {
           text: codigoPix,
-          width: 175,
-          height: 175,
+          width: 180,
+          height: 180,
           colorDark: "#171717",
           colorLight: "#ffffff",
           correctLevel: QRCode.CorrectLevel.M
         });
 
-        botaoCopiar.disabled = false;
+        elementos.copiar.disabled = false;
 
-        mostrarStatus(
-          "Aguardando o pagamento. A confirmação será verificada automaticamente."
-        );
-
+        status("Aguardando o pagamento. A confirmação será verificada automaticamente.");
         agendarVerificacao();
+
       } catch (erro) {
         console.error("Erro ao criar pagamento:", erro);
-
-        mostrarStatus(
-          erro.message || "Erro ao gerar o PIX. Tente novamente.",
-          "erro"
-        );
+        status(erro.message || "Erro ao gerar o PIX. Tente novamente.", "erro");
+      } finally {
+        elementos.loading.classList.remove("visivel");
       }
     }
 
     async function copiarPix() {
       if (!codigoPix) return;
 
-      botaoCopiar.disabled = true;
-      textoBotaoCopiar.textContent = "Copiando...";
+      elementos.copiar.disabled = true;
+      elementos.textoCopiar.textContent = "Copiando...";
 
       try {
         if (navigator.clipboard && window.isSecureContext) {
@@ -733,13 +738,11 @@
         } else {
           const campo = document.createElement("textarea");
           campo.value = codigoPix;
-          campo.setAttribute("readonly", "");
+          campo.readOnly = true;
           campo.style.position = "fixed";
           campo.style.left = "-9999px";
-          campo.style.top = "0";
 
           document.body.appendChild(campo);
-          campo.focus();
           campo.select();
 
           const sucesso = document.execCommand("copy");
@@ -750,26 +753,19 @@
           }
         }
 
-        textoBotaoCopiar.textContent = "PIX copiado!";
+        elementos.textoCopiar.textContent = "PIX copiado!";
+        status("Código PIX copiado. Cole no aplicativo do seu banco.", "sucesso");
 
-        mostrarStatus(
-          "Código PIX copiado. Cole no aplicativo do seu banco.",
-          "sucesso"
-        );
       } catch (erro) {
         console.error("Erro ao copiar PIX:", erro);
+        elementos.textoCopiar.textContent = "Tentar copiar novamente";
+        status("Não foi possível copiar. Tente novamente.", "erro");
 
-        textoBotaoCopiar.textContent = "Tentar copiar novamente";
-
-        mostrarStatus(
-          "Não foi possível copiar. Tente novamente.",
-          "erro"
-        );
       } finally {
-        botaoCopiar.disabled = false;
+        elementos.copiar.disabled = false;
 
         setTimeout(() => {
-          textoBotaoCopiar.textContent = "Copiar código PIX";
+          elementos.textoCopiar.textContent = "Copiar código PIX";
         }, 2500);
       }
     }
@@ -777,7 +773,7 @@
     function agendarVerificacao() {
       pararVerificacao();
 
-      if (!pagamentoId || pagamentoAprovado) return;
+      if (!pagamentoId || aprovado) return;
 
       timerVerificacao = setTimeout(
         verificarPagamento,
@@ -786,17 +782,14 @@
     }
 
     async function verificarPagamento() {
-      if (verificando || pagamentoAprovado || !pagamentoId) return;
+      if (verificando || aprovado || !pagamentoId) return;
 
       verificando = true;
 
       try {
         const resposta = await fetch(
           "/check-payment/" + encodeURIComponent(pagamentoId),
-          {
-            method: "GET",
-            cache: "no-store"
-          }
+          { method: "GET", cache: "no-store" }
         );
 
         if (!resposta.ok) {
@@ -806,59 +799,56 @@
         const dados = await resposta.json();
 
         if (dados.status === "approved") {
-          pagamentoAprovado = true;
+          aprovado = true;
           pararVerificacao();
-          mostrarTelaAprovado();
+          mostrarAprovado();
           return;
         }
 
-        mostrarStatus("Aguardando a confirmação do pagamento...");
+        status("Aguardando a confirmação do pagamento...");
+
       } catch (erro) {
         console.error("Erro ao verificar pagamento:", erro);
-        mostrarStatus("Verificando o pagamento. Aguarde...");
+        status("Verificando o pagamento. Aguarde.");
+
       } finally {
         verificando = false;
 
-        if (!pagamentoAprovado) {
+        if (!aprovado) {
           agendarVerificacao();
         }
       }
     }
 
-    function mostrarTelaAprovado() {
+    function mostrarAprovado() {
       pararVerificacao();
 
-      paginaPagamento.style.display = "none";
-      telaAprovado.classList.add("visivel");
+      elementos.pagina.style.display = "none";
+      elementos.telaAprovado.classList.add("visivel");
       document.body.style.overflow = "hidden";
 
-      segundosRestantes = TEMPO_REDIRECIONAMENTO;
-      atualizarContador();
-
-      if (timerRedirecionamento !== null) {
-        clearInterval(timerRedirecionamento);
-      }
+      let tempo = TEMPO_REDIRECIONAMENTO;
+      atualizarContador(tempo);
 
       timerRedirecionamento = setInterval(() => {
-        segundosRestantes -= 1;
-        atualizarContador();
+        tempo--;
+        atualizarContador(tempo);
 
-        if (segundosRestantes <= 0) {
+        if (tempo <= 0) {
           clearInterval(timerRedirecionamento);
           window.location.href = URL_CHAT;
         }
       }, 1000);
     }
 
-    function atualizarContador() {
-      contadorElemento.textContent = String(segundosRestantes);
-      segundosElemento.textContent = String(segundosRestantes);
+    function atualizarContador(tempo) {
+      elementos.contador.textContent = String(tempo);
+      elementos.segundos.textContent = String(tempo);
     }
 
-    botaoCopiar.addEventListener("click", copiarPix);
+    elementos.copiar.addEventListener("click", copiarPix);
 
     criarPagamento();
   </script>
 </body>
 </html>
-```
