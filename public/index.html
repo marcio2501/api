@@ -1,16 +1,17 @@
-
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#fff9df">
+  <meta name="color-scheme" content="light">
   <title>Pagamento PIX</title>
 
   <style>
     :root {
       --fundo: #fff9df;
-      --branco: #ffffff;
+      --branco: #fff;
       --amarelo: #f4c430;
       --amarelo-hover: #e5b51d;
       --texto: #292929;
@@ -35,8 +36,8 @@
       min-height: 100dvh;
       padding: 16px;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       background: var(--fundo);
       color: var(--texto);
       font-family: Inter, -apple-system, BlinkMacSystemFont,
@@ -45,6 +46,11 @@
 
     button, a {
       font: inherit;
+    }
+
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid #8b6a00;
+      outline-offset: 3px;
     }
 
     .pagina {
@@ -95,59 +101,24 @@
       line-height: 1.5;
     }
 
-    .detalhes {
-      margin-bottom: 14px;
-      padding: 13px;
+    .valor-total {
+      margin: 0 0 16px;
+      padding: 15px 10px;
       background: #fffaf0;
       border: 1px solid #f5edda;
       border-radius: 14px;
-      text-align: left;
-    }
-
-    .detalhe {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 5px 0;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .detalhe + .detalhe {
-      border-top: 1px solid #f0e9d7;
-      margin-top: 5px;
-      padding-top: 10px;
-    }
-
-    .detalhe-label {
-      color: var(--cinza);
-      flex-shrink: 0;
-    }
-
-    .detalhe-valor {
-      text-align: right;
-      font-weight: 650;
-      overflow-wrap: anywhere;
-    }
-
-    .valor-total {
-      margin-top: 11px;
-      padding-top: 11px;
-      border-top: 1px solid #eee5cf;
-      text-align: center;
     }
 
     .valor-total small {
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
       color: var(--cinza);
       font-size: 12px;
     }
 
     .valor-total strong {
       display: block;
-      font-size: clamp(25px, 7vw, 31px);
+      font-size: clamp(27px, 7vw, 33px);
       font-weight: 800;
       letter-spacing: -.7px;
       overflow-wrap: anywhere;
@@ -157,7 +128,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 0 auto 12px;
+      margin: 0 auto 13px;
     }
 
     #qrcode {
@@ -231,6 +202,7 @@
       color: var(--cinza);
       font-size: 12px;
       line-height: 1.5;
+      overflow-wrap: anywhere;
     }
 
     .status.sucesso {
@@ -273,6 +245,7 @@
     }
 
     /* Tela de pagamento aprovado */
+
     .tela-aprovado {
       position: fixed;
       inset: 0;
@@ -281,6 +254,7 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
+      overflow-y: auto;
       background: var(--fundo);
     }
 
@@ -292,6 +266,7 @@
     .aprovado-cartao {
       width: 100%;
       max-width: 380px;
+      margin: auto;
       padding: 30px 23px;
       border: 1px solid var(--borda);
       border-radius: 23px;
@@ -347,7 +322,7 @@
 
     .botao-chat {
       background: var(--verde);
-      color: white;
+      color: #fff;
     }
 
     .botao-chat:hover {
@@ -366,8 +341,14 @@
     }
 
     @keyframes aparecer {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @media (max-width: 420px) {
@@ -396,8 +377,8 @@
       }
 
       .cartao {
-        padding-top: 12px;
-        padding-bottom: 12px;
+        padding-top: 13px;
+        padding-bottom: 13px;
       }
 
       .logo {
@@ -407,12 +388,12 @@
       }
 
       .subtitulo {
-        margin: 5px 0 9px;
+        margin: 5px 0 10px;
       }
 
-      .detalhes {
-        padding: 9px;
-        margin-bottom: 9px;
+      .valor-total {
+        padding: 10px;
+        margin-bottom: 10px;
       }
 
       #qrcode {
@@ -444,7 +425,6 @@
   <main class="pagina" id="paginaPagamento">
     <section class="cartao" aria-labelledby="titulo">
 
-      <!-- Logo PIX -->
       <div class="logo" aria-label="PIX">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="m7.2 7.2 4.8-4.4 4.8 4.4-4.8 4.5-4.8-4.5Z"
@@ -463,36 +443,21 @@
       </div>
 
       <h1 id="titulo">Pagamento via PIX</h1>
+
       <p class="subtitulo">
-        Confira os detalhes e faça seu pagamento.
+        Escaneie o QR Code ou copie o código para pagar.
       </p>
 
-      <div class="detalhes">
-        <div class="detalhe">
-          <span class="detalhe-label">Consultor</span>
-          <span class="detalhe-valor" id="nomeConsultor">—</span>
-        </div>
-
-        <div class="detalhe">
-          <span class="detalhe-label">Consulta</span>
-          <span class="detalhe-valor" id="descricaoConsulta">—</span>
-        </div>
-
-        <div class="detalhe">
-          <span class="detalhe-label">Duração</span>
-          <span class="detalhe-valor" id="duracaoConsulta">—</span>
-        </div>
-
-        <div class="valor-total">
-          <small>Valor a pagar</small>
-          <strong id="valor">—</strong>
-        </div>
+      <div class="valor-total">
+        <small>Valor a pagar</small>
+        <strong id="valor">—</strong>
       </div>
 
       <div class="qr-area">
         <div id="qrcode" aria-label="QR Code do pagamento PIX">
           <span class="carregando" aria-label="Carregando"></span>
         </div>
+
         <p class="qr-legenda">
           Escaneie com o aplicativo do seu banco.
         </p>
@@ -528,7 +493,7 @@
     </section>
   </main>
 
-  <!-- Tela exibida depois da confirmação -->
+  <!-- Tela exibida após a confirmação do pagamento -->
   <section
     class="tela-aprovado"
     id="telaAprovado"
@@ -552,7 +517,8 @@
         Você será direcionado para o chat automaticamente.
       </p>
 
-      <div class="contador" id="contador" aria-label="Segundos restantes">10</div>
+      <div class="contador" id="contador"
+        aria-label="Segundos restantes">10</div>
 
       <a
         class="botao botao-chat"
@@ -569,7 +535,7 @@
     </div>
   </section>
 
-  <!-- qrcode.min.js precisa estar na mesma pasta deste arquivo -->
+  <!-- Coloque qrcode.min.js na mesma pasta deste arquivo -->
   <script src="qrcode.min.js"></script>
 
   <script>
@@ -581,38 +547,11 @@
     const TEMPO_REDIRECIONAMENTO = 10;
     const INTERVALO_VERIFICACAO = 3000;
 
-    const parametros = new URLSearchParams(window.location.search);
-
-    /*
-      PARÂMETROS DINÂMICOS DA URL:
-
-      valor       = valor real do pagamento
-      nome        = nome do consultor
-      descricao   = descrição da consulta
-      duracao     = duração da consulta
-
-      Exemplo de formato:
-      pagamento.html?valor=VALOR_REAL&nome=Nome&descricao=Consulta&duracao=5%20minutos
-
-      Não existe valor ou nome de consultor fixado como padrão.
-    */
-
+    const parametros = new URLSearchParams(location.search);
     const valorParametro = parametros.get("valor");
-    const nomeParametro = parametros.get("nome");
-    const descricaoParametro = parametros.get("descricao");
-    const duracaoParametro = parametros.get("duracao");
 
     const paginaPagamento =
       document.getElementById("paginaPagamento");
-
-    const nomeConsultorElemento =
-      document.getElementById("nomeConsultor");
-
-    const descricaoConsultaElemento =
-      document.getElementById("descricaoConsulta");
-
-    const duracaoConsultaElemento =
-      document.getElementById("duracaoConsulta");
 
     const valorElemento =
       document.getElementById("valor");
@@ -693,30 +632,13 @@
       }
     }
 
-    function preencherInformacoes() {
-      nomeConsultorElemento.textContent =
-        nomeParametro || "Não informado";
-
-      descricaoConsultaElemento.textContent =
-        descricaoParametro || "Não informada";
-
-      duracaoConsultaElemento.textContent =
-        duracaoParametro || "Não informada";
-
-      valorPagamento = interpretarValor(valorParametro);
-
-      if (Number.isFinite(valorPagamento)) {
-        valorElemento.textContent = formatarMoeda(valorPagamento);
-      } else {
-        valorElemento.textContent = "—";
-      }
-    }
-
     async function criarPagamento() {
-      preencherInformacoes();
+      valorPagamento = interpretarValor(valorParametro);
 
       if (!Number.isFinite(valorPagamento)) {
         qrElemento.replaceChildren();
+        valorElemento.textContent = "—";
+
         mostrarStatus(
           "Valor ausente ou inválido. Verifique o parâmetro valor na URL.",
           "erro"
@@ -724,8 +646,11 @@
         return;
       }
 
+      valorElemento.textContent = formatarMoeda(valorPagamento);
+
       if (typeof QRCode === "undefined") {
         qrElemento.replaceChildren();
+
         mostrarStatus(
           "Não foi possível carregar o QR Code. Verifique qrcode.min.js.",
           "erro"
@@ -744,11 +669,7 @@
           body: JSON.stringify({
             transaction_amount: valorPagamento,
             payment_method_id: "pix",
-            description: [
-              nomeParametro,
-              descricaoParametro,
-              duracaoParametro
-            ].filter(Boolean).join(" - ") || "Pagamento de consulta",
+            description: "Pagamento PIX",
             payer: {
               email: "teste@teste.com"
             }
@@ -914,6 +835,10 @@
       segundosRestantes = TEMPO_REDIRECIONAMENTO;
       atualizarContador();
 
+      if (timerRedirecionamento !== null) {
+        clearInterval(timerRedirecionamento);
+      }
+
       timerRedirecionamento = setInterval(() => {
         segundosRestantes -= 1;
         atualizarContador();
@@ -936,3 +861,4 @@
   </script>
 </body>
 </html>
+```
