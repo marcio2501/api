@@ -1,275 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento PIX</title>
 
-import express from "express";
-import fetch from "node-fetch";
-import dotenv from "dotenv";
-import { randomUUID } from "node:crypto";
+  <!-- CSS -->
+  <link href="bootstrap.min.css" rel="stylesheet">
+  <link href="signin.css" rel="stylesheet">
 
-dotenv.config();
+  <!-- JS -->
+  <script src="jquery-3.6.4.min.js"></script>
+  <script src="qrcode.min.js"></script>
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 10px;
+    }
 
-const API_MP = "https://api.mercadopago.com";
-const ORIGEM_PERMITIDA =
-  "https://onlinecartomantes-dotcom.github.io";
+    .container-pagamento {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+
+    #qrcode canvas,
+    #qrcode img {
+      width: 100% !important;
+      max-width: 280px;
+      height: auto !important;
+    }
+
+    textarea {
+      width: 100%;
+      height: 80px;
+      font-size: 12px;
+      resize: none;
+    }
+
+    button {
+      width: 100%;
+      max-width: 200px;
+    }
+
+    h3 {
+      font-size: 20px;
+    }
+
+    /* CONTADOR */
+    .contador {
+      font-size: 28px;
+      font-weight: bold;
+      color: green;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 480px) {
+      h3 {
+        font-size: 18px;
+      }
+
+      #qrcode canvas,
+      #qrcode img {
+        max-width: 220px;
+      }
+
+      textarea {
+        font-size: 11px;
+      }
+
+      img {
+        max-width: 70px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div id="loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#FFF;z-index:9999;padding-top:20px;">
+  <img src="Loading_icon.gif" style="width:200px;">
+</div>
+
+<!-- CONTAINER -->
+<div class="container-pagamento">
+
+  <!-- INFO -->
+  <div id="info_pagamento" style="display:none;">
+    <img src="logo.png" style="width:80px;margin-top:20px;">
+    <h3 id="descricao"></h3>
+    <h3 id="valor"></h3>
+  </div>
+
+  <!-- QR CODE -->
+  <div id="qrcode" style="margin-top:20px;"></div>
+
+  <!-- PIX COPIA E COLA -->
+  <div id="pixCopia" style="margin-top:20px;"></div>
+
+  <!-- STATUS -->
+  <div id="status" style="margin-top:20px;"></div>
+
+</div>
+
+<script>
+// PARAMETROS URL
+const params = new URLSearchParams(window.location.search);
+
+const VALOR_URL = params.get("valor");
+const DESCRICAO_URL = params.get("descricao");
+
+// DEFINIÇÃO
+let VALOR = VALOR_URL ? Number(VALOR_URL) : 10.00;
+let DESCRICAO = DESCRICAO_URL ? DESCRICAO_URL : "Pagamento PIX";
 
 // =========================
-// CORS - COMUNICAÇÃO COM GITHUB PAGES
+// CRIAR PAGAMENTO
 // =========================
-app.use((req, res, next) => {
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    ORIGEM_PERMITIDA
-  );
+async function criarPagamento() {
+  document.getElementById("loading").style.display = "block";
 
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, OPTIONS"
-  );
+  const res = await fetch("/create-payment", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      transaction_amount: VALOR,
+      payment_method_id: "pix",
+      description: DESCRICAO,
+      payer: {
+        email: "teste@teste.com"
+      }
+    })
+  });
 
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
+  const data = await res.json();
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
+  document.getElementById("loading").style.display = "none";
+
+  if (data.point_of_interaction) {
+
+    const qr = data.point_of_interaction.transaction_data.qr_code;
+    const copiaCola = data.point_of_interaction.transaction_data.qr_code;
+
+    // QR
+    document.getElementById("qrcode").innerHTML = "";
+    new QRCode(document.getElementById("qrcode"), qr);
+
+    // INFO
+    document.getElementById("info_pagamento").style.display = "block";
+    document.getElementById("descricao").innerText = DESCRICAO;
+    document.getElementById("valor").innerText = "R$ " + VALOR;
+
+    // PIX copia e cola
+    document.getElementById("pixCopia").innerHTML = `
+      <textarea id="pixTexto">${copiaCola}</textarea>
+      <br><br>
+      <button onclick="copiarPix()" class="btn btn-success">Copiar PIX</button>
+    `;
+
+    verificarPagamento(data.id);
+
+  } else {
+    alert("Erro ao gerar pagamento");
   }
-
-  next();
-});
-
-app.use(express.json());
-
-// =========================
-// VERIFICAR CONFIGURAÇÃO
-// =========================
-if (!process.env.MP_TOKEN) {
-  console.error("ERRO: MP_TOKEN não está configurado no Render.");
 }
 
 // =========================
-// ROTA INICIAL - TESTAR API
+// COPIAR PIX
 // =========================
-app.get("/", (req, res) => {
-  res.json({
-    online: true,
-    mensagem: "API de pagamentos online",
-    endpoints: [
-      "POST /create-payment",
-      "GET /check-payment/:id",
-      "POST /webhook"
-    ]
-  });
-});
+function copiarPix() {
+  const texto = document.getElementById("pixTexto");
+  texto.select();
+  document.execCommand("copy");
+  alert("PIX copiado!");
+}
 
 // =========================
-// CRIAR PAGAMENTO PIX
+// VERIFICAR PAGAMENTO
 // =========================
-app.post("/create-payment", async (req, res) => {
-  try {
-    if (!process.env.MP_TOKEN) {
-      return res.status(500).json({
-        error: "MP_TOKEN não configurado no Render."
-      });
+async function verificarPagamento(id) {
+  const interval = setInterval(async () => {
+
+    const res = await fetch("/check-payment/" + id);
+    const data = await res.json();
+
+    if (data.status === "approved") {
+      clearInterval(interval);
+
+      // mensagem + contador
+      document.getElementById("status").innerHTML = `
+        <h2>Pagamento aprovado ✅</h2>
+        <p>Redirecionando para o chat...</p>
+        <div class="contador" id="contador">10</div>
+        <img src="check_ok.png" width="120">
+      `;
+
+      iniciarContador();
     }
 
-    const valor = Number(req.body?.transaction_amount);
-    const descricao =
-      String(req.body?.description || "Pagamento PIX").trim();
-
-    if (!Number.isFinite(valor) || valor <= 0) {
-      return res.status(400).json({
-        error: "O valor do pagamento é inválido."
-      });
-    }
-
-    console.log("Solicitação de pagamento recebida:", {
-      transaction_amount: valor,
-      description: descricao
-    });
-
-    const corpo = {
-      transaction_amount: valor,
-      payment_method_id: "pix",
-      description: descricao,
-      payer: {
-        email: "marciodoxosse@gmail.com"
-      }
-    };
-
-    if (process.env.WEBHOOK_URL) {
-      corpo.notification_url = process.env.WEBHOOK_URL;
-    }
-
-    const response = await fetch(
-      `${API_MP}/v1/payments`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.MP_TOKEN}`,
-          "X-Idempotency-Key": randomUUID()
-        },
-        body: JSON.stringify(corpo)
-      }
-    );
-
-    const texto = await response.text();
-
-    let dados;
-
-    try {
-      dados = JSON.parse(texto);
-    } catch {
-      dados = {
-        message: "Resposta inválida do Mercado Pago."
-      };
-    }
-
-    console.log("Resposta Mercado Pago:", {
-      httpStatus: response.status,
-      paymentId: dados.id || null,
-      status: dados.status || null,
-      message: dados.message || null,
-      cause: dados.cause || null
-    });
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "Erro no Mercado Pago",
-        details: dados
-      });
-    }
-
-    return res.status(200).json(dados);
-
-  } catch (err) {
-    console.error("Erro interno ao criar pagamento:", err);
-
-    return res.status(500).json({
-      error: "Erro interno no servidor."
-    });
-  }
-});
+  }, 5000);
+}
 
 // =========================
-// CONSULTAR STATUS DO PAGAMENTO
+// CONTADOR
 // =========================
-app.get("/check-payment/:id", async (req, res) => {
-  try {
-    if (!process.env.MP_TOKEN) {
-      return res.status(500).json({
-        error: "MP_TOKEN não configurado no Render."
-      });
+function iniciarContador() {
+  let tempo = 10;
+  const contadorEl = document.getElementById("contador");
+
+  const intervalo = setInterval(() => {
+    tempo--;
+    contadorEl.innerText = tempo;
+
+    if (tempo <= 0) {
+      clearInterval(intervalo);
+
+      window.location.href = "https://tawk.to/chat/69ccd2878bf0a61c2cb9ba4f/1jl41coc1";
     }
+  }, 1000);
+}
 
-    const paymentId = req.params.id;
+// AUTO START
+if (VALOR_URL) {
+  criarPagamento();
+}
+</script>
 
-    const response = await fetch(
-      `${API_MP}/v1/payments/${encodeURIComponent(paymentId)}`,
-      {
-        headers: {
-          "Authorization": `Bearer ${process.env.MP_TOKEN}`
-        }
-      }
-    );
-
-    const dados = await response.json();
-
-    console.log("Consulta de pagamento:", {
-      id: dados.id || paymentId,
-      status: dados.status || null
-    });
-
-    return res.status(response.status).json(dados);
-
-  } catch (err) {
-    console.error("Erro ao consultar pagamento:", err);
-
-    return res.status(500).json({
-      error: "Erro ao verificar pagamento."
-    });
-  }
-});
-
-// =========================
-// WEBHOOK MERCADO PAGO
-// =========================
-app.post("/webhook", async (req, res) => {
-  // Confirma o recebimento da notificação.
-  res.sendStatus(200);
-
-  try {
-    console.log("Webhook recebido:", req.body);
-
-    if (!process.env.MP_TOKEN) {
-      console.error("MP_TOKEN não configurado.");
-      return;
-    }
-
-    const tipo = req.body?.type || req.query?.type;
-
-    const paymentId =
-      req.body?.data?.id ||
-      req.query?.["data.id"];
-
-    if (tipo !== "payment" || !paymentId) {
-      console.log("Notificação sem ID de pagamento.");
-      return;
-    }
-
-    const response = await fetch(
-      `${API_MP}/v1/payments/${encodeURIComponent(paymentId)}`,
-      {
-        headers: {
-          "Authorization": `Bearer ${process.env.MP_TOKEN}`
-        }
-      }
-    );
-
-    const paymentData = await response.json();
-
-    if (!response.ok) {
-      console.error(
-        "Erro ao consultar pagamento do webhook:",
-        paymentData
-      );
-      return;
-    }
-
-    console.log("Status real do pagamento:", {
-      id: paymentData.id,
-      status: paymentData.status,
-      amount: paymentData.transaction_amount
-    });
-
-    if (paymentData.status === "approved") {
-      console.log("Pagamento aprovado:", paymentData.id);
-
-      // Aqui você pode liberar o serviço,
-      // registrar o pagamento no banco de dados
-      // ou enviar uma confirmação ao cliente.
-    }
-
-  } catch (err) {
-    console.error("Erro ao processar webhook:", err);
-  }
-});
-
-// =========================
-// ROTA NÃO ENCONTRADA
-// =========================
-app.use((req, res) => {
-  res.status(404).json({
-    error: "Rota não encontrada.",
-    path: req.path
-  });
-});
-
-// =========================
-// INICIAR SERVIDOR
-// =========================
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+</body>
+</html>
