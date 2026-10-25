@@ -1,63 +1,170 @@
+
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import { randomUUID } from "node:crypto";
 
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
+const API_MP = "https://api.mercadopago.com";
+const ORIGEM_PERMITIDA =
+  "https://onlinecartomantes-dotcom.github.io";
+
+// =========================
+// CORS - GITHUB PAGES
+// =========================
+app.use((req, res, next) => {
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    ORIGEM_PERMITIDA
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+// =========================
+// MIDDLEWARES
+// =========================
 app.use(express.json());
 app.use(express.static("public"));
 
-const PORT = process.env.PORT || 3000;
-
-// 🔥 VERIFICA TOKEN
+// =========================
+// VERIFICAR TOKEN
+// =========================
 if (!process.env.MP_TOKEN) {
-  console.error("❌ MP_TOKEN NÃO DEFINIDO");
+  console.error("ERRO: MP_TOKEN NÃO DEFINIDO NO RENDER");
 }
 
 // =========================
-// CRIAR PAGAMENTO
+// ROTA INICIAL
+// =========================
+app.get("/", (req, res) => {
+  res.json({
+    online: true,
+    mensagem: "API de pagamentos online",
+    rotas: [
+      "POST /create-payment",
+      "GET /check-payment/:id",
+      "POST /webhook"
+    ]
+  });
+});
+
+// =========================
+// CRIAR PAGAMENTO PIX
 // =========================
 app.post("/create-payment", async (req, res) => {
   try {
-    console.log("📩 Requisição recebida:", req.body);
+    if (!process.env.MP_TOKEN) {
+      return res.status(500).json({
+        error: "Token do Mercado Pago não configurado."
+      });
+    }
 
-    const response = await fetch("https://api.mercadopago.com/v1/payments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MP_TOKEN}`,
-        "X-Idempotency-Key": Date.now().toString() // 🔥 obrigatório
-      },
-      body: JSON.stringify({
-        transaction_amount: Number(req.body.transaction_amount),
-        payment_method_id: "pix",
-        description: req.body.description || "Pagamento PIX",
-        payer: {
-          email: "marciodoxosse@gmail.com"
-        },
-        notification_url: process.env.WEBHOOK_URL
-          ? process.env.WEBHOOK_URL
-          : undefined
-      }),
+    const valor = Number(req.body?.transaction_amount);
+    const descricao =
+      String(req.body?.description || "Pagamento PIX").trim();
+
+    if (!Number.isFinite(valor) || valor <= 0) {
+      return res.status(400).json({
+        error: "Valor do pagamento inválido."
+      });
+    }
+
+    console.log("REQUISIÇÃO DE PAGAMENTO:", {
+      valor,
+      descricao
     });
 
-    const data = await response.json();
+    const corpo = {
+      transaction_amount: valor,
+      payment_method_id: "pix",
+      description: descricao,
+      payer: {
+        email: "marciodoxosse@gmail.com"
+      }
+    };
 
-    console.log("💰 RESPOSTA MERCADO PAGO:", data);
+    if (process.env.WEBHOOK_URL) {
+      corpo.notification_url = process.env.WEBHOOK_URL;
+    }
+
+    const response = await fetch(
+      `${API_MP}/v1/payments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.MP_TOKEN}`,
+          "X-Idempotency-Key": randomUUID()
+        },
+        body: JSON.stringify(corpo)
+      }
+    );
+
+    const texto = await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(texto);
+    } catch {
+      data = {
+        message: "Resposta inválida do Mercado Pago."
+      };
+    }
+
+    console.log("RESPOSTA MERCADO PAGO:", {
+      httpStatus: response.status,
+      id: data.id || null,
+      status: data.status || null,
+      message: data.message || null,
+      cause: data.cause || null
+    });
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: "Erro no Mercado Pago",
+        error: "Erro ao criar pagamento no Mercado Pago.",
         details: data
       });
     }
 
-    res.json(data);
+    // Dados necessários para o checkout e o QR Code.
+    const transacao =
+      data?.point_of_interaction?.transaction_data || {};
+
+    return res.status(200).json({
+      ...data,
+      pix: {
+        ticket_url: transacao.ticket_url || null,
+        qr_code: transacao.qr_code || null,
+        qr_code_base64: transacao.qr_code_base64 || null
+      }
+    });
 
   } catch (err) {
-    console.error("❌ ERRO INTERNO:", err);
-    res.status(500).json({ error: "Erro interno no servidor" });
+    console.error("ERRO AO CRIAR PAGAMENTO:", err);
+
+    return res.status(500).json({
+      error: "Erro interno ao criar pagamento."
+    });
   }
 });
 
@@ -66,74 +173,118 @@ app.post("/create-payment", async (req, res) => {
 // =========================
 app.get("/check-payment/:id", async (req, res) => {
   try {
+    if (!process.env.MP_TOKEN) {
+      return res.status(500).json({
+        error: "Token do Mercado Pago não configurado."
+      });
+    }
+
+    const id = encodeURIComponent(req.params.id);
+
     const response = await fetch(
-      `https://api.mercadopago.com/v1/payments/${req.params.id}`,
+      `${API_MP}/v1/payments/${id}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.MP_TOKEN}`,
-        },
+          "Authorization": `Bearer ${process.env.MP_TOKEN}`
+        }
       }
     );
 
     const data = await response.json();
 
-    console.log("🔍 STATUS PAGAMENTO:", data.status);
+    console.log("STATUS DO PAGAMENTO:", {
+      id: data.id || req.params.id,
+      status: data.status || null
+    });
 
-    res.json(data);
+    return res.status(response.status).json(data);
 
   } catch (err) {
-    console.error("❌ ERRO CHECK:", err);
-    res.status(500).json({ error: "Erro ao verificar pagamento" });
+    console.error("ERRO AO CONSULTAR PAGAMENTO:", err);
+
+    return res.status(500).json({
+      error: "Erro ao verificar pagamento."
+    });
   }
 });
 
 // =========================
-// WEBHOOK (IMPORTANTE)
+// WEBHOOK MERCADO PAGO
 // =========================
 app.post("/webhook", async (req, res) => {
+  // Responder rapidamente para confirmar o recebimento.
+  res.sendStatus(200);
+
   try {
-    console.log("🔔 WEBHOOK RECEBIDO:", req.body);
+    console.log("WEBHOOK RECEBIDO:", req.body);
 
-    if (req.body.type === "payment") {
-      const paymentId = req.body.data.id;
-
-      console.log("💰 ID PAGAMENTO:", paymentId);
-
-      // 🔥 BUSCAR STATUS REAL NO MP
-      const response = await fetch(
-        `https://api.mercadopago.com/v1/payments/${paymentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.MP_TOKEN}`,
-          },
-        }
-      );
-
-      const paymentData = await response.json();
-
-      console.log("📊 STATUS FINAL:", paymentData.status);
-
-      if (paymentData.status === "approved") {
-        console.log("✅ PAGAMENTO APROVADO!");
-
-        // 👉 AQUI você pode:
-        // salvar no banco
-        // liberar acesso
-        // enviar email
-      }
+    if (!process.env.MP_TOKEN) {
+      console.error("MP_TOKEN não configurado.");
+      return;
     }
 
-    res.sendStatus(200);
+    const tipo = req.body?.type || req.query?.type;
+
+    const paymentId =
+      req.body?.data?.id ||
+      req.query?.["data.id"];
+
+    if (tipo !== "payment" || !paymentId) {
+      console.log("Notificação sem ID de pagamento.");
+      return;
+    }
+
+    const response = await fetch(
+      `${API_MP}/v1/payments/${encodeURIComponent(paymentId)}`,
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.MP_TOKEN}`
+        }
+      }
+    );
+
+    const paymentData = await response.json();
+
+    if (!response.ok) {
+      console.error(
+        "ERRO AO CONSULTAR PAGAMENTO DO WEBHOOK:",
+        paymentData
+      );
+      return;
+    }
+
+    console.log("STATUS REAL DO PAGAMENTO:", {
+      id: paymentData.id,
+      status: paymentData.status,
+      valor: paymentData.transaction_amount
+    });
+
+    if (paymentData.status === "approved") {
+      console.log("PAGAMENTO APROVADO:", paymentData.id);
+
+      // Integre aqui seu banco de dados ou liberação de serviço.
+      // Não considere um pagamento aprovado apenas por dados enviados
+      // pelo navegador; confirme sempre o status consultando o Mercado Pago.
+    }
 
   } catch (err) {
-    console.error("❌ ERRO WEBHOOK:", err);
-    res.sendStatus(500);
+    console.error("ERRO AO PROCESSAR WEBHOOK:", err);
   }
 });
 
 // =========================
-// START SERVER
+// ROTA NÃO ENCONTRADA
+// =========================
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Rota não encontrada.",
+    rota: req.path
+  });
+});
+
+// =========================
+// INICIAR SERVIDOR
 // =========================
 app.listen(PORT, () => {
-  console.log("🚀 Servidor rodando na porta", PORT);
+  console.log("Servidor rodando na porta", PORT);
 });
